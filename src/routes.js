@@ -1,12 +1,12 @@
-const { Router } = require("express");
+import { Router } from 'express';
+import customers from './app/controllers/CustormersController';
+
 const routes = new Router();
 
-const customers = require("./app/controllers/CustormersController");
+routes.get('/customers', customers.index);
+routes.get('/customers/:id', customers.show);
+routes.post('/customers', customers.create);
+routes.put('/customers/:id', customers.update);
+routes.delete('/customers/:id', customers.destroy);
 
-routes.get("/customers", customers.index);
-routes.get("/customers/:id", customers.show);
-routes.post("/customers", customers.create);
-routes.put("/customers/:id", customers.update);
-routes.delete("/customers/:id", customers.destroy);
-
-module.exports = routes;
+export default routes;

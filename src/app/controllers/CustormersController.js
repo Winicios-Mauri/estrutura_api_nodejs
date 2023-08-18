@@ -1,7 +1,7 @@
-let = customers = [
-  { id: 1, name: "Rockseat", site: "http://rockseat.com.br" },
-  { id: 2, name: "DevSamurai", site: "http://devsamurai.com.br" },
-  { id: 3, name: "DevMedia", site: "http://devmedia.com.br" },
+const customers = [
+  { id: 1, name: 'Rockseat', site: 'http://rockseat.com.br' },
+  { id: 2, name: 'DevSamurai', site: 'http://devsamurai.com.br' },
+  { id: 3, name: 'DevMedia', site: 'http://devmedia.com.br' },
 ];
 
 class CustormersController {
@@ -12,11 +12,11 @@ class CustormersController {
 
   // Recupera um Custormer
   show(req, res) {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const customer = customers.find((item) => item.id === id);
     const status = customer ? 200 : 404;
 
-    console.log("GET:: /customers/:id", customer);
+    console.log('GET:: /customers/:id', customer);
 
     return res.status(status).json(customer);
   }
@@ -34,14 +34,14 @@ class CustormersController {
 
   // Atualiza um Custormer
   update(req, res) {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const { name, site } = req.body;
 
     const index = customers.findIndex((item) => item.id === id);
     const status = index >= 0 ? 200 : 404;
 
     if (index >= 0) {
-      customers[index] = { id: parseInt(id), name, site };
+      customers[index] = { id: parseInt(id, 10), name, site };
     }
 
     return res.status(status).json(customers[index]);
@@ -49,7 +49,7 @@ class CustormersController {
 
   // Exclui um Custormer
   destroy(req, res) {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const index = customers.findIndex((item) => item.id === id);
     const status = index >= 0 ? 200 : 404;
 
@@ -61,4 +61,4 @@ class CustormersController {
   }
 }
 
-module.exports = new CustormersController();
+export default new CustormersController();
