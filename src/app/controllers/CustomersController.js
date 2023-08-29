@@ -1,14 +1,31 @@
+import Customer from '../models/Customer';
+
 const customers = [
   { id: 1, name: 'Rockseat', site: 'http://rockseat.com.br' },
   { id: 2, name: 'DevSamurai', site: 'http://devsamurai.com.br' },
   { id: 3, name: 'DevMedia', site: 'http://devmedia.com.br' },
 ];
 
-class CustormersController {
+const CustomersController = {
   // Listagem de Customers
-  index(req, res) {
-    return res.json(customers);
-  }
+  // async index(req, res) {
+  //   const data = await Customer.findAll({
+  //     limit: 1000,
+  //   });
+  //   return res.json(data);
+  // },
+
+  async index(req, res) {
+    try {
+      const customers = await Customer.findAll();
+      return res.json(customers);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      return res
+        .status(500)
+        .json({ error: 'An error occurred while fetching customers.' });
+    }
+  },
 
   // Recupera um Custormer
   show(req, res) {
@@ -19,7 +36,7 @@ class CustormersController {
     console.log('GET:: /customers/:id', customer);
 
     return res.status(status).json(customer);
-  }
+  },
 
   // Cria um Custormer
   create(req, res) {
@@ -30,7 +47,7 @@ class CustormersController {
     customers.push(newCustomer);
 
     return res.status(201).json(newCustomer);
-  }
+  },
 
   // Atualiza um Custormer
   update(req, res) {
@@ -45,7 +62,7 @@ class CustormersController {
     }
 
     return res.status(status).json(customers[index]);
-  }
+  },
 
   // Exclui um Custormer
   destroy(req, res) {
@@ -58,7 +75,7 @@ class CustormersController {
     }
 
     return res.status(status).json();
-  }
-}
+  },
+};
 
-export default new CustormersController();
+export default CustomersController;
