@@ -1,4 +1,9 @@
+import * as Yup from 'yup';
+import { Op } from 'sequelize';
+import { parseISO } from 'date-fns';
+
 import Customer from '../models/Customer';
+import Contact from '../models/Contact';
 
 const customers = [
   { id: 1, name: 'Rockseat', site: 'http://rockseat.com.br' },
@@ -8,73 +13,163 @@ const customers = [
 
 const CustomersController = {
   // Listagem de Customers
-  // async index(req, res) {
-  //   const data = await Customer.findAll({
-  //     limit: 1000,
-  //   });
-  //   return res.json(data);
-  // },
-
   async index(req, res) {
-    try {
-      const customers = await Customer.findAll();
-      return res.json(customers);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-      return res
-        .status(500)
-        .json({ error: 'An error occurred while fetching customers.' });
+    const {
+      name,
+      email,
+      status,
+      createdBefore,
+      createdAfter,
+      updatedBefore,
+      updatedAfter,
+      sort,
+    } = req.query;
+
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 25;
+
+    let where = {};
+    const order = [];
+
+    if (name) {
+      where = {
+        ...where,
+        [Op.iLike]: name,
+      };
     }
+
+    if (email) {
+      where = {
+        ...where,
+        [Op.iLike]: email,
+      };
+    }
+
+    if (status) {
+      where = {
+        ...where,
+        [Op.in]: status.split(',').map((item) => item.toUpperCase()),
+      };
+    }
+
+    if (createdBefore) {
+      where = {
+        ...where,
+        createdAt: {
+          [Op.gte]: parseISO(createdBefore),
+        },
+      };
+    }
+
+    if (createdAfter) {
+      where = {
+        ...where,
+        createdAt: {
+          [Op.lte]: parseISO(createdAfter),
+        },
+      };
+    }
+
+    if (updatedBefore) {
+      where = {
+        ...where,
+        createdAt: {
+          [Op.gte]: parseISO(updatedBefore),
+        },
+      };
+    }
+
+    if (updatedAfter) {
+      where = {
+        ...where,
+        createdAt: {
+          [Op.lte]: parseISO(updatedAfter),
+        },
+      };
+    }
+
+    if (sort) {
+      order.sort.split(',').map((item) => item.split(':'));
+    }
+
+    const data = await Customer.findAll({
+      where,
+      include: [
+        {
+          model: Contact,
+          attributes: ['id', 'status'],
+        },
+      ],
+      order,
+      limit,
+      offset: limit * page - limit,
+    });
+
+    return res.json(data);
   },
 
   // Recupera um Custormer
-  show(req, res) {
-    const id = parseInt(req.params.id, 10);
-    const customer = customers.find((item) => item.id === id);
-    const status = customer ? 200 : 404;
+  async show(req, res) {
+    const customer = await Customer.findByPk(req.params.id);
 
-    console.log('GET:: /customers/:id', customer);
+    if (!customer) {
+      return res.status(404).json();
+    }
 
-    return res.status(status).json(customer);
+    return res.json(customer);
   },
 
   // Cria um Custormer
-  create(req, res) {
-    const { name, site } = req.body;
-    const id = customers[customers.length - 1].id + 1;
+  async create(req, res) {
+    const schema = Yup.object().shape({
+      name: Yup.string().required(),
+      email: Yup.string().email().required(),
+      status: Yup.string().uppercase(),
+    });
 
-    const newCustomer = { id, name, site };
-    customers.push(newCustomer);
+    if (!(await schema.isValid(req.body))) {
+      return res.status(404).json({ error: 'Error on validate schema' });
+    }
 
-    return res.status(201).json(newCustomer);
+    const customer = await Customer.create(req.body);
+
+    return res.status(201).json(customer);
   },
 
   // Atualiza um Custormer
-  update(req, res) {
-    const id = parseInt(req.params.id, 10);
-    const { name, site } = req.body;
+  async update(req, res) {
+    const schema = Yup.object().shape({
+      name: Yup.string(),
+      email: Yup.string().email(),
+      status: Yup.string().uppercase(),
+    });
 
-    const index = customers.findIndex((item) => item.id === id);
-    const status = index >= 0 ? 200 : 404;
-
-    if (index >= 0) {
-      customers[index] = { id: parseInt(id, 10), name, site };
+    if (!(await schema.isValid(req.body))) {
+      return res.status(404).json({ error: 'Error on validate schema' });
     }
 
-    return res.status(status).json(customers[index]);
+    const customer = await Customer.findByPk(req.params.id);
+
+    if (!customer) {
+      return res.status(404).json();
+    }
+
+    await customer.update(req.body);
+
+    return res.json();
   },
 
   // Exclui um Custormer
-  destroy(req, res) {
-    const id = parseInt(req.params.id, 10);
-    const index = customers.findIndex((item) => item.id === id);
-    const status = index >= 0 ? 200 : 404;
+  async destroy(req, res) {
+    const customer = await Customer.findByPk(req.params.id);
 
-    if (index >= 0) {
-      customers.splice(index, 1);
+    if (!customer) {
+      return res.status(404).json();
     }
 
-    return res.status(status).json();
+    await customer.destroy();
+
+    return res.json();
   },
 };
 

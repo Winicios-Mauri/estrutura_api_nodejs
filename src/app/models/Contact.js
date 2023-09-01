@@ -1,4 +1,4 @@
-import { Sequelize, Model } from 'sequelize';
+import Sequelize, { Model } from 'sequelize';
 
 class Contact extends Model {
   static init(sequelize) {
@@ -6,11 +6,15 @@ class Contact extends Model {
       {
         name: Sequelize.STRING,
         email: Sequelize.STRING,
-        status: Sequelize.ENUM('ACTIVE', 'ARCHIVE'),
+        status: Sequelize.ENUM('ACTIVE', 'ARCHIVED'),
       },
       {
         sequelize,
-      }
+        name: {
+          singular: 'contact',
+          plural: 'contacts',
+        },
+      },
     );
   }
 
