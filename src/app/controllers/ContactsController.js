@@ -5,7 +5,7 @@ import { parseISO } from 'date-fns';
 import Customer from '../models/Customer';
 import Contact from '../models/Contact';
 
-const CustomersController = {
+const ContactsController = {
   // Listagem de Customers
   async index(req, res) {
     const {
@@ -22,7 +22,7 @@ const CustomersController = {
     const page = req.query.page || 1;
     const limit = req.query.limit || 25;
 
-    let where = {};
+    let where = { customer_id: req.params.customerId };
     const order = [];
 
     if (name) {
@@ -86,12 +86,13 @@ const CustomersController = {
       order.sort.split(',').map((item) => item.split(':'));
     }
 
-    const data = await Customer.findAll({
+    const data = await Contact.findAll({
       where,
       include: [
         {
-          model: Contact,
+          model: Customer,
           attributes: ['id', 'status'],
+          required: true,
         },
       ],
       order,
@@ -104,13 +105,20 @@ const CustomersController = {
 
   // Recupera um Custormer
   async show(req, res) {
-    const customer = await Customer.findByPk(req.params.id);
+    const contact = await Contact.findOne({
+      where: {
+        customer_id: req.params.customerId,
+        id: req.params.id,
+      },
+      include: [Customer],
+      attributes: { exclude: ['customer_id', 'customerId'] },
+    });
 
-    if (!customer) {
+    if (!contact) {
       return res.status(404).json();
     }
 
-    return res.json(customer);
+    return res.json(contact);
   },
 
   // Cria um Custormer
@@ -125,9 +133,12 @@ const CustomersController = {
       return res.status(404).json({ error: 'Error on validate schema' });
     }
 
-    const customer = await Customer.create(req.body);
+    const contact = await Contact.create({
+      customer_id: req.params.customerId,
+      ...req.body,
+    });
 
-    return res.status(201).json(customer);
+    return res.status(201).json(contact);
   },
 
   // Atualiza um Custormer
@@ -142,29 +153,41 @@ const CustomersController = {
       return res.status(404).json({ error: 'Error on validate schema' });
     }
 
-    const customer = await Customer.findByPk(req.params.id);
+    const contact = await Contact.findOne({
+      where: {
+        customer_id: req.params.customerId,
+        id: req.params.id,
+      },
+      attributes: { exclude: ['customer_id', 'customerId'] },
+    });
 
-    if (!customer) {
+    if (!contact) {
       return res.status(404).json();
     }
 
-    await customer.update(req.body);
+    await contact.update(req.body);
 
     return res.json();
   },
 
   // Exclui um Custormer
   async destroy(req, res) {
-    const customer = await Customer.findByPk(req.params.id);
+    const contact = await Contact.findOne({
+      where: {
+        customer_id: req.params.customerId,
+        id: req.params.id,
+      },
+      attributes: { exclude: ['customer_id', 'customerId'] },
+    });
 
-    if (!customer) {
+    if (!contact) {
       return res.status(404).json();
     }
 
-    await customer.destroy();
+    await contact.destroy();
 
     return res.json();
   },
 };
 
-export default CustomersController;
+export default ContactsController;
