@@ -3,7 +3,10 @@ import { Op } from 'sequelize';
 import { parseISO } from 'date-fns';
 
 import User from '../models/User';
-import Mail from '../../lib/Mail';
+import WelcomeEmailJob from '../jobs/WelcomeEmailJob';
+
+import DummyJob from '../jobs/DummyJob';
+import Queue from '../../lib/Queue';
 
 const UsersController = {
   // Listagem de User
@@ -131,11 +134,8 @@ const UsersController = {
       req.body,
     );
 
-    Mail.send({
-      to: email,
-      subject: 'Bem Vindo',
-      text: `Ola ${name} bem vindo ao nosso sistema`,
-    });
+    await Queue.add(DummyJob.key, { message: 'Hello, Jobs' });
+    await Queue.add(WelcomeEmailJob.key, { name, email });
 
     return res.status(201).json({
       id, name, email, fileId, createdAt, updatedAt,
