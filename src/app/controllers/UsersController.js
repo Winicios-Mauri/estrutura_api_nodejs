@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import { parseISO } from 'date-fns';
 
 import User from '../models/User';
+import Mail from '../../lib/Mail';
 
 const UsersController = {
   // Listagem de User
@@ -90,7 +91,9 @@ const UsersController = {
 
   // Recupera um User
   async show(req, res) {
-    const user = await User.findByPk(req.params.id);
+    const user = await User.findByPk(req.params.id, {
+      attributes: { exclude: ['password', 'password_hash'] },
+    });
 
     if (!user) {
       return res.status(404).json();
@@ -123,32 +126,39 @@ const UsersController = {
     }
 
     const {
-      id, name, email, createdAt, updatedAt,
+      id, name, email, fileId, createdAt, updatedAt,
     } = await User.create(
       req.body,
     );
 
+    Mail.send({
+      to: email,
+      subject: 'Bem Vindo',
+      text: `Ola ${name} bem vindo ao nosso sistema`,
+    });
+
     return res.status(201).json({
-      id, name, email, createdAt, updatedAt,
+      id, name, email, fileId, createdAt, updatedAt,
     });
   },
   // Atualiza um User
   async update(req, res) {
     const schema = Yup.object().shape({
-      name: Yup.string().required(),
+      name: Yup.string(),
       email: Yup.string().email(),
       oldPassword: Yup.string().min(8),
-      password: Yup.string().min(8).when('oldPassword', (oldPassword, field) =>
-        oldPassword ? field.required() : field),
-      passwordConfirmation: Yup.string().when(
-        'password',
-        (password, field) =>
-          password ? field.required().oneOf([Yup.ref('password')]) : field,
-      ),
+      password: Yup.string()
+        .min(8)
+        .when('oldPassword', (oldPassword, field) =>
+          oldPassword ? field.required() : field),
+      passwordConfirmation: Yup.string().when('password', (password, field) =>
+        password ? field.required().oneOf([Yup.ref('password')]) : field),
     });
 
     if (!(await schema.isValid(req.body))) {
-      return res.status(404).json({ error: 'Error on validate schema' });
+      return res.status(400).json({
+        error: 'Error on validate schema.',
+      });
     }
 
     const user = await User.findByPk(req.params.id);
@@ -160,18 +170,23 @@ const UsersController = {
     const { oldPassword } = req.body;
 
     if (oldPassword && !(await user.checkPassword(oldPassword))) {
-      return res.status(401).json({ error: 'User password is incorrect' });
+      return res.status(401).json({ error: 'User password not match.' });
     }
 
     const {
-      id, name, email, createdAt, updatedAt,
-    } = await User.update(
-      req.body,
-    );
+      id,
+      name,
+      email,
+      fileId,
+      createdAt,
+      updatedAt,
+    } = await user.update(req.body);
 
-    return res.status(201).json({
-      id, name, email, createdAt, updatedAt,
-    });
+    return res
+      .status(201)
+      .json({
+        id, name, email, fileId, createdAt, updatedAt,
+      });
   },
 
   // Exclui um User
