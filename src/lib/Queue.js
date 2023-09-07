@@ -37,7 +37,9 @@ class Queue {
 
   // eslint-disable-next-line class-methods-use-this
   handleFailure(job, err) {
-    console.error(`Queue ${job.queue.name}: FAILED `, err);
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`Queue ${job.queue.name}: FAILED `, err);
+    }
   }
 }
 
